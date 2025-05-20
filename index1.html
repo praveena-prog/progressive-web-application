@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="description" content="Simple E-commerce PWA">
+    <title>SparkleCart | E-commerce PWA</title>
+    <link rel="manifest" href="/manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .cart-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 10px;
+            min-width: 20px;
+            height: 20px;
+        }
+        
+        .drawer {
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        .drawer-open {
+            transform: translateX(0);
+        }
+        
+        .drawer-closed {
+            transform: translateX(100%);
+        }
+        
+        @media (max-width: 640px) {
+            .product-card {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="installPrompt" class="hidden fixed bottom-0 left-0 right-0 bg-indigo-600 text-white p-4 shadow-lg z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <div>
+                <p class="font-semibold">Install ShopEasy</p>
+                <p class="text-sm">Get the best shopping experience with our app!</p>
+            </div>
+            <div class="flex space-x-2">
+                <button id="installCancel" class="px-4 py-2 rounded-lg bg-indigo-800 hover:bg-indigo-900">Not Now</button>
+                <button id="installButton" class="px-4 py-2 rounded-lg bg-white text-indigo-600 hover:bg-gray-100">Install</button>
+            </div>
+        </div>
+    </div>
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-store text-indigo-600 text-2xl"></i>
+                <h1 class="text-xl font-bold text-gray-800">SparkleCart</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <button id="cartButton" class="text-gray-600 hover:text-indigo-600 relative">
+                        <i class="fas fa-shopping-cart text-2xl"></i>
+                        <span id="cartCount" class="cart-badge bg-red-500 text-white rounded-full flex items-center justify-center hidden">0</span>
+                    </button>
+                </div>
+                <button id="menuButton" class="text-gray-600 hover:text-indigo-600 md:hidden">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+    <div id="mobileMenu" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50">
+        <div class="absolute right-0 top-0 h-full w-64 bg-white shadow-lg">
+            <div class="p-4 flex justify-between items-center border-b">
+                <h2 class="text-lg font-semibold">Menu</h2>
+                <button id="closeMenuButton" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <nav class="p-4">
+                <ul class="space-y-4">
+                    <li><a href="#" class="block py-2 text-gray-700 hover:text-indigo-600">Home</a></li>
+                    <li><a href="#" class="block py-2 text-gray-700 hover:text-indigo-600">Categories</a></li>
+                    <li><a href="#" class="block py-2 text-gray-700 hover:text-indigo-600">Deals</a></li>
+                    <li><a href="#" class="block py-2 text-gray-700 hover:text-indigo-600">Account</a></li>
+                    <li><a href="#" class="block py-2 text-gray-700 hover:text-indigo-600">Settings</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+    <div id="cartDrawer" class="drawer drawer-closed fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-lg z-50 overflow-y-auto">
+        <div class="p-4 border-b flex justify-between items-center">
+            <h2 class="text-xl font-semibold">Your Cart</h2>
+            <button id="closeCartButton" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="cartItems" class="p-4 space-y-4">
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-shopping-cart text-4xl mb-2"></i>
+                <p>Your cart is empty</p>
+            </div>
+        </div>
+        <div class="p-4 border-t sticky bottom-0 bg-white">
+            <div class="flex justify-between mb-4">
+                <span class="font-semibold">Total:</span>
+                <span id="cartTotal" class="font-bold">$0.00</span>
+            </div>
+            <button class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">Checkout</button>
+        </div>
+    </div>
+    <main class="container mx-auto px-4 py-6">
+        <section class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 mb-8 text-white">
+            <div class="max-w-2xl">
+                <h2 class="text-3xl font-bold mb-2">Summer Sale!</h2>
+                <p class="text-lg mb-4">Up to 50% off on selected items. Limited time offer.</p>
+                <button class="bg-white text-indigo-600 px-6 py-2 rounded-lg font-medium hover:bg-gray-100">Shop Now</button>
+            </div>
+        </section>
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">Categories</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                <div class="bg-white rounded-lg shadow p-4 text-center hover:bg-indigo-50 cursor-pointer">
+                    <i class="fas fa-tshirt text-3xl text-indigo-600 mb-2"></i>
+                    <p class="font-medium">Clothing</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 text-center hover:bg-indigo-50 cursor-pointer">
+                    <i class="fas fa-laptop text-3xl text-indigo-600 mb-2"></i>
+                    <p class="font-medium">Electronics</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 text-center hover:bg-indigo-50 cursor-pointer">
+                    <i class="fas fa-home text-3xl text-indigo-600 mb-2"></i>
+                    <p class="font-medium">Home</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 text-center hover:bg-indigo-50 cursor-pointer">
+                    <i class="fas fa-book text-3xl text-indigo-600 mb-2"></i>
+                    <p class="font-medium">Books</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 text-center hover:bg-indigo-50 cursor-pointer">
+                    <i class="fas fa-gamepad text-3xl text-indigo-600 mb-2"></i>
+                    <p class="font-medium">Games</p>
+                </div>
+            </div>
+        </section>
+        <section>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Featured Products</h2>
+                <a href="#" class="text-indigo-600 hover:text-indigo-800">View All</a>
+            </div>
+             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div class="product-card bg-white rounded-lg shadow overflow-hidden transition-all duration-300">
+                    <div class="relative">
+                        <img src="https://images.unsplash.com/photo-1546868871-7041f2a55e12?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8c21hcnRwaG9uZXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60" alt="Smartphone" class="w-full h-48 object-cover">
+                        <div class="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">SALE</div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-lg mb-1">Premium Smartphone</h3>
+                        <div class="flex items-center mb-2">
+                            <div class="flex text-yellow-400">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                            </div>
+                            <span class="text-gray-600 text-sm ml-2">(128)</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-gray-500 line-through text-sm">$899.99</span>
+                                <span class="text-indigo-600 font-bold ml-2">$749.99</span>
+                            </div>
+                            <button class="add-to-cart text-indigo-600 hover:text-indigo-800" data-id="1" data-name="Premium Smartphone" data-price="749.99">
+                                <i class="fas fa-plus-circle text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="product-card bg-white rounded-lg shadow overflow-hidden transition-all duration-300">
+                    <div class="relative">
+                        <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8d2F0Y2h8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60" alt="Watch" class="w-full h-48 object-cover">
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-lg mb-1">Luxury Watch</h3>
+                        <div class="flex items-center mb-2">
+                            <div class="flex text-yellow-400">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="far fa-star"></i>
+                            </div>
+                            <span class="text-gray-600 text-sm ml-2">(64)</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-indigo-600 font-bold">$349.99</span>
+                            </div>
+                            <button class="add-to-cart text-indigo-600 hover:text-indigo-800" data-id="2" data-name="Luxury Watch" data-price="349.99">
+                                <i class="fas fa-plus-circle text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="product-card bg-white rounded-lg shadow overflow-hidden transition-all duration-300">
+                    <div class="relative">
+                        <img src="https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGxhcHRvcHxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60" alt="Laptop" class="w-full h-48 object-cover">
+                        <div class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">NEW</div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-lg mb-1">Ultrabook Pro</h3>
+                        <div class="flex items-center mb-2">
+                            <div class="flex text-yellow-400">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <span class="text-gray-600 text-sm ml-2">(256)</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-gray-500 line-through text-sm">$1299.99</span>
+                                <span class="text-indigo-600 font-bold ml-2">$1099.99</span>
+                            </div>
+                            <button class="add-to-cart text-indigo-600 hover:text-indigo-800" data-id="3" data-name="Ultrabook Pro" data-price="1099.99">
+                                <i class="fas fa-plus-circle text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Product 4 -->
+                <div class="product-card bg-white rounded-lg shadow overflow-hidden transition-all duration-300">
+                    <div class="relative">
+                        <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8aGVhZHBob25lc3xlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60" alt="Headphones" class="w-full h-48 object-cover">
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-lg mb-1">Wireless Headphones</h3>
+                        <div class="flex items-center mb-2">
+                            <div class="flex text-yellow-400">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="far fa-star"></i>
+                            </div>
+                            <span class="text-gray-600 text-sm ml-2">(87)</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-indigo-600 font-bold">$199.99</span>
+                            </div>
+                            <button class="add-to-cart text-indigo-600 hover:text-indigo-800" data-id="4" data-name="Wireless Headphones" data-price="199.99">
+                                <i class="fas fa-plus-circle text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">ShopEasy</h3>
+                    <p class="text-gray-400">Your one-stop shop for all your needs. Quality products at affordable prices.</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Home</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Products</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">About Us</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Customer Service</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">FAQs</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Shipping Policy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Returns & Refunds</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Connect With Us</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-pinterest"></i></a>
+                    </div>
+                    <div class="mt-4">
+                        <p class="text-gray-400">Subscribe to our newsletter</p>
+                        <div class="flex mt-2">
+                            <input type="email" placeholder="Your email" class="px-3 py-2 bg-gray-700 text-white rounded-l focus:outline-none w-full">
+                            <button class="bg-indigo-600 px-4 py-2 rounded-r hover:bg-indigo-700"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
+                <p>&copy; 2023 ShopEasy. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    <div id="offlineNotification" class="hidden fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+        <div class="flex items-center">
+            <i class="fas fa-wifi-slash mr-2"></i>
+            <span>You are currently offline</span>
+        </div>
+    </div>
+ <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('ServiceWorker registration successful');
+                }).catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+        const manifest = {
+            "name": "ShopEasy",
+            "short_name": "ShopEasy",
+            "start_url": "/",
+            "display": "standalone",
+            "background_color": "#ffffff",
+            "theme_color": "#4f46e5",
+            "icons": [
+                {
+                    "src": "icons/icon-72x72.png",
+                    "sizes": "72x72",
+                    "type": "image/png"
+                },
+                {
+                    "src": "icons/icon-96x96.png",
+                    "sizes": "96x96",
+                    "type": "image/png"
+                },
+                {
+                    "src": "icons/icon-128x128.png",
+                    "sizes": "128x128",
+                    "type": "image/png"
+                },
+                {
+                    "src": "icons/icon-144x144.png",
+                    "sizes": "144x144",
+                    "type": "image/png"
+                },
+                {
+                    "src": "icons/icon-152x152.png",
+                    "sizes": "152x152",
+                    "type": "image/png"
+                },
+                {
+                    "src": "icons/icon-192x192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                },
+                {
+                    "src": "icons/icon-384x384.png",
+                    "sizes": "384x384",
+                    "type": "image/png"
+                },
+                {
+                    "src": "icons/icon-512x512.png",
+                    "sizes": "512x512",
+                    "type": "image/png"
+                }
+            ]
+        };
+
+    
+        const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestURL;
+        document.head.appendChild(link);
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        
+        function updateCartCount() {
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const cartCount = document.getElementById('cartCount');
+            
+            if (totalItems > 0) {
+                cartCount.textContent = totalItems;
+                cartCount.classList.remove('hidden');
+            } else {
+                cartCount.classList.add('hidden');
+            }
+        }
+        
+        function updateCartDisplay() {
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            
+            if (cart.length === 0) {
+                cartItems.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-shopping-cart text-4xl mb-2"></i>
+                        <p>Your cart is empty</p>
+                    </div>
+                `;
+                cartTotal.textContent = '$0.00';
+                return;
+            }
+            
+            let itemsHTML = '';
+            let total = 0;
+            
+            cart.forEach(item => {
+                total += item.price * item.quantity;
+                itemsHTML += `
+                    <div class="flex items-center justify-between border-b pb-4">
+                        <div class="flex items-center">
+                            <img src="${item.image || 'https://via.placeholder.com/50'}" alt="${item.name}" class="w-12 h-12 object-cover rounded">
+                            <div class="ml-3">
+                                <h4 class="font-medium">${item.name}</h4>
+                                <p class="text-gray-600">$${item.price.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <button class="decrease-quantity text-gray-500 hover:text-indigo-600" data-id="${item.id}">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <span class="mx-2">${item.quantity}</span>
+                            <button class="increase-quantity text-gray-500 hover:text-indigo-600" data-id="${item.id}">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="remove-item text-red-500 hover:text-red-700 ml-4" data-id="${item.id}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            cartItems.innerHTML = itemsHTML;
+            cartTotal.textContent = `$${total.toFixed(2)}`;
+            document.querySelectorAll('.decrease-quantity').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.target.closest('button').dataset.id;
+                    updateQuantity(id, -1);
+                });
+            });
+            
+            document.querySelectorAll('.increase-quantity').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.target.closest('button').dataset.id;
+                    updateQuantity(id, 1);
+                });
+            });
+            
+            document.querySelectorAll('.remove-item').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.target.closest('button').dataset.id;
+                    removeFromCart(id);
+                });
+            });
+        }
+        
+        function addToCart(product) {
+            const existingItem = cart.find(item => item.id === product.id);
+            
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({
+                    id: product.id,
+                    name: product.name,
+                    price: parseFloat(product.price),
+                    quantity: 1,
+                    image: product.image || 'https://via.placeholder.com/50'
+                });
+            }
+            
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();
+            updateCartDisplay();
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-bounce';
+            notification.innerHTML = `<i class="fas fa-check-circle mr-2"></i> ${product.name} added to cart`;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => notification.remove(), 300);
+            }, 2000);
+        }
+        
+        function updateQuantity(id, change) {
+            const item = cart.find(item => item.id === id);
+            
+            if (item) {
+                item.quantity += change;
+                
+                if (item.quantity <= 0) {
+                    cart = cart.filter(item => item.id !== id);
+                }
+                
+                localStorage.setItem('cart', JSON.stringify(cart));
+                updateCartCount();
+                updateCartDisplay();
+            }
+        }
+        
+        function removeFromCart(id) {
+            cart = cart.filter(item => item.id !== id);
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();
+            updateCartDisplay();
+        }
+        document.getElementById('cartButton').addEventListener('click', () => {
+            document.getElementById('cartDrawer').classList.remove('drawer-closed');
+            document.getElementById('cartDrawer').classList.add('drawer-open');
+        });
+        
+        document.getElementById('closeCartButton').addEventListener('click', () => {
+            document.getElementById('cartDrawer').classList.remove('drawer-open');
+            document.getElementById('cartDrawer').classList.add('drawer-closed');
+        });
+        
+        document.getElementById('menuButton').addEventListener('click', () => {
+            document.getElementById('mobileMenu').classList.remove('hidden');
+        });
+        
+        document.getElementById('closeMenuButton').addEventListener('click', () => {
+            document.getElementById('mobileMenu').classList.add('hidden');
+        });
+        document.querySelectorAll('.add-to-cart').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const product = {
+                    id: e.target.closest('button').dataset.id,
+                    name: e.target.closest('button').dataset.name,
+                    price: e.target.closest('button').dataset.price,
+                    image: e.target.closest('.product-card').querySelector('img')?.src
+                };
+                addToCart(product);
+            });
+        });
+        updateCartCount();
+        updateCartDisplay();
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installPrompt').classList.remove('hidden');
+        });
+        
+        document.getElementById('installButton').addEventListener('click', async () => {
+            document.getElementById('installPrompt').classList.add('hidden');
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            deferredPrompt = null;
+        });
+        
+        document.getElementById('installCancel').addEventListener('click', () => {
+            document.getElementById('installPrompt').classList.add('hidden');
+        });
+        function updateOnlineStatus() {
+            const offlineNotification = document.getElementById('offlineNotification');
+            
+            if (navigator.onLine) {
+                offlineNotification.classList.add('hidden');
+            } else {
+                offlineNotification.classList.remove('hidden');
+            }
+        }
+        
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+    </script>
+    <script>
+        const serviceWorkerContent = `
+            const CACHE_NAME = 'shopeasy-v1';
+            const urlsToCache = [
+                '/',
+                '/index.html',
+                '/styles.css',
+                '/app.js',
+                'https://cdn.tailwindcss.com',
+                'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+                'https://images.unsplash.com/photo-1546868871-7041f2a55e12?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8c21hcnRwaG9uZXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60',
+                'https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8d2F0Y2h8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60',
+                'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGxhcHRvcHxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60',
+                'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8aGVhZHBob25lc3xlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60'
+            ];
+
+            self.addEventListener('install', event => {
+                event.waitUntil(
+                    caches.open(CACHE_NAME)
+                        .then(cache => {
+                            return cache.addAll(urlsToCache);
+                        })
+                );
+            });
+
+            self.addEventListener('fetch', event => {
+                event.respondWith(
+                    caches.match(event.request)
+                        .then(response => {
+                            // Cache hit - return response
+                            if (response) {
+                                return response;
+                            }
+                            return fetch(event.request);
+                        }
+                    )
+                );
+            });
+
+            self.addEventListener('activate', event => {
+                const cacheWhitelist = [CACHE_NAME];
+                event.waitUntil(
+                    caches.keys().then(cacheNames => {
+                        return Promise.all(
+                            cacheNames.map(cacheName => {
+                                if (cacheWhitelist.indexOf(cacheName) === -1) {
+                                    return caches.delete(cacheName);
+                                }
+                            })
+                        );
+                    })
+                );
+            });
+        `;
+        const swBlob = new Blob([serviceWorkerContent], {type: 'application/javascript'});
+        const swURL = URL.createObjectURL(swBlob);
+        navigator.serviceWorker.register(swURL).then(registration => {
+            console.log('ServiceWorker registration successful');
+        }).catch(err => {
+            console.log('ServiceWorker registration failed: ', err);
+        });
+    </script>
+</body>
+</html>
